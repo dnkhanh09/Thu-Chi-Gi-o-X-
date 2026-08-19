@@ -1,0 +1,6 @@
+{
+  "name": "Quản Lý Thu Chi Giáo Xứ",
+  "description": "Hệ thống quản lý sổ thu chi giáo xứ theo tháng/năm, phân nhóm danh mục & mã thu chi, thống kê quỹ và xuất báo cáo tài chính chuyên nghiệp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
