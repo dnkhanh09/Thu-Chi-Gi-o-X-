@@ -1,15 +1,20 @@
 import {
   Calendar,
+  Check,
+  ChevronDown,
   DollarSign,
   FileSpreadsheet,
   FolderTree,
   PiggyBank,
   Receipt,
+  Search,
+  Sparkles,
+  Tag,
   User,
   Users,
   X,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Category, CategoryGroup, Fund, ParishInfo, ParishZone, Transaction, TransactionType } from '../types';
 import { formatCurrency, generateVoucherCode, numberToVietnameseWords } from '../utils/formatters';
 
@@ -56,17 +61,64 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [note, setNote] = useState<string>('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Filter categories by selected type
-  const availableCategories = categories.filter((c) => c.type === type);
+  // Quick Autocomplete & Search state for Categories
+  const [categorySearchQuery, setCategorySearchQuery] = useState<string>('');
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState<boolean>(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Grouped categories for nice select optgroup
-  const groupedCategories = categoryGroups
-    .filter((g) => g.type === type)
-    .map((g) => ({
-      groupName: g.name,
-      items: availableCategories.filter((c) => c.group === g.name),
-    }))
-    .filter((g) => g.items.length > 0);
+  // Filter categories by selected transaction type
+  const availableCategories = useMemo(() => {
+    return categories.filter((c) => c.type === type);
+  }, [categories, type]);
+
+  // Fast live filtered suggestions based on search input (matching 1+ character)
+  const filteredCategorySuggestions = useMemo(() => {
+    const query = categorySearchQuery.trim().toLowerCase();
+    if (!query) {
+      return availableCategories;
+    }
+    return availableCategories.filter((cat) => {
+      const codeMatch = cat.code.toLowerCase().includes(query);
+      const nameMatch = cat.name.toLowerCase().includes(query);
+      const groupMatch = cat.group.toLowerCase().includes(query);
+      const descMatch = cat.description ? cat.description.toLowerCase().includes(query) : false;
+      return codeMatch || nameMatch || groupMatch || descMatch;
+    });
+  }, [availableCategories, categorySearchQuery]);
+
+  // Grouped categories for standard browsing
+  const groupedCategories = useMemo(() => {
+    return categoryGroups
+      .filter((g) => g.type === type)
+      .map((g) => ({
+        groupName: g.name,
+        color: g.color,
+        items: availableCategories.filter((c) => c.group === g.name),
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [categoryGroups, availableCategories, type]);
+
+  const selectedCategoryObj = useMemo(() => {
+    return categories.find((c) => c.id === categoryId);
+  }, [categories, categoryId]);
+
+  // Handle outside click for category dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setIsCategoryDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Reset or initialize state when modal opens
   useEffect(() => {
@@ -84,6 +136,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         setCreator(editingTransaction.creator || parishInfo.accountantName);
         setApprover(editingTransaction.approver || parishInfo.pastorName);
         setNote(editingTransaction.note || '');
+
+        const curCat = categories.find((c) => c.id === editingTransaction.categoryId);
+        setCategorySearchQuery(curCat ? `[${curCat.code}] ${curCat.name}` : '');
       } else {
         const newType: TransactionType = initialType === 'expense' ? 'expense' : 'income';
         const todayStr = new Date().toISOString().slice(0, 10);
@@ -93,7 +148,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         // Default category for that type
         const firstCat = categories.find((c) => c.type === newType);
-        setCategoryId(firstCat ? firstCat.id : '');
+        if (firstCat) {
+          setCategoryId(firstCat.id);
+          setCategorySearchQuery(`[${firstCat.code}] ${firstCat.name}`);
+        } else {
+          setCategoryId('');
+          setCategorySearchQuery('');
+        }
 
         // Default fund
         const defaultFund = funds.find((f) => f.code === 'QUY-CHUNG') || funds[0];
@@ -110,6 +171,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         setNote('');
       }
       setErrors({});
+      setIsCategoryDropdownOpen(false);
     }
   }, [isOpen, editingTransaction, initialType]);
 
@@ -119,7 +181,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     if (!editingTransaction) {
       setVoucherNumber(generateVoucherCode(newType, date, allTransactions));
       const firstCat = categories.find((c) => c.type === newType);
-      if (firstCat) setCategoryId(firstCat.id);
+      if (firstCat) {
+        setCategoryId(firstCat.id);
+        setCategorySearchQuery(`[${firstCat.code}] ${firstCat.name}`);
+      } else {
+        setCategoryId('');
+        setCategorySearchQuery('');
+      }
+    } else {
+      const firstCat = categories.find((c) => c.type === newType);
+      if (firstCat) {
+        setCategoryId(firstCat.id);
+        setCategorySearchQuery(`[${firstCat.code}] ${firstCat.name}`);
+      }
     }
   };
 
@@ -127,6 +201,48 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     setDate(newDate);
     if (!editingTransaction) {
       setVoucherNumber(generateVoucherCode(type, newDate, allTransactions));
+    }
+  };
+
+  const handleSelectCategory = (cat: Category) => {
+    setCategoryId(cat.id);
+    setCategorySearchQuery(`[${cat.code}] ${cat.name}`);
+    setIsCategoryDropdownOpen(false);
+    if (errors.categoryId) {
+      setErrors((prev) => ({ ...prev, categoryId: '' }));
+    }
+    // Auto-suggest description if currently blank
+    if (!description.trim()) {
+      setDescription(cat.name);
+    }
+  };
+
+  // Keyboard navigation for suggestions
+  const handleKeyDownCategory = (e: React.KeyboardEvent) => {
+    if (!isCategoryDropdownOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        setIsCategoryDropdownOpen(true);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev < filteredCategorySuggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredCategorySuggestions.length - 1
+      );
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredCategorySuggestions[highlightedIndex]) {
+        handleSelectCategory(filteredCategorySuggestions[highlightedIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setIsCategoryDropdownOpen(false);
     }
   };
 
@@ -138,7 +254,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     const newErrors: { [key: string]: string } = {};
     if (!voucherNumber.trim()) newErrors.voucherNumber = 'Vui lòng nhập số chứng từ';
     if (!date) newErrors.date = 'Vui lòng chọn ngày ghi sổ';
-    if (!categoryId) newErrors.categoryId = 'Vui lòng chọn mục thu/chi';
+    if (!categoryId) newErrors.categoryId = 'Vui lòng chọn mục thu/chi hoặc mã mục đích';
     if (!fundId) newErrors.fundId = 'Vui lòng chọn quỹ tiền tệ';
     if (!payerReceiver.trim()) newErrors.payerReceiver = 'Vui lòng nhập họ tên người nộp / nhận';
     if (!amount || Number(amount) <= 0) newErrors.amount = 'Vui lòng nhập số tiền lớn hơn 0';
@@ -181,8 +297,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
     onClose();
   };
-
-  const selectedCategoryObj = categories.find((c) => c.id === categoryId);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -279,44 +393,141 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Row 2: Mục Thu/Chi & Mã mục */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
-              <span className="flex items-center gap-1">
+          {/* Row 2: Mục Thu/Chi & Mã mục đích (SMART LIVE SEARCH & AUTOCOMPLETE) */}
+          <div className="relative">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <FolderTree className="w-3.5 h-3.5 text-blue-600" />
-                Mục Thu / Chi & Mã Mục Đích <span className="text-rose-500">*</span>
+                <span>Mục Thu / Chi & Mã Mục Đích <span className="text-rose-500">*</span></span>
+              </label>
+              <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                Gõ 1 ký tự mã/nội dung để gợi ý
               </span>
-              {selectedCategoryObj && (
-                <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  Mã: {selectedCategoryObj.code}
-                </span>
-              )}
-            </label>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className={`w-full px-3 py-2 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                errors.categoryId ? 'border-rose-500 bg-rose-50' : 'border-slate-200'
-              }`}
-            >
-              <option value="">-- Chọn mục thu / chi phù hợp --</option>
-              {groupedCategories.map((group) => (
-                <optgroup key={group.groupName} label={`--- ${group.groupName.toUpperCase()} ---`}>
-                  {group.items.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      [{cat.code}] {cat.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            </div>
+
+            {/* Smart Search Combobox Input */}
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center gap-1 pointer-events-none">
+                <Search className="w-3.5 h-3.5" />
+              </div>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={categorySearchQuery}
+                onFocus={() => {
+                  setIsCategoryDropdownOpen(true);
+                  setHighlightedIndex(0);
+                }}
+                onChange={(e) => {
+                  setCategorySearchQuery(e.target.value);
+                  setIsCategoryDropdownOpen(true);
+                  setHighlightedIndex(0);
+                }}
+                onKeyDown={handleKeyDownCategory}
+                placeholder="Nhập mã (VD: THU, CHI, LE, XD, PL) hoặc tên mục thu chi..."
+                className={`w-full pl-9 pr-10 py-2.5 text-xs bg-white border rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.categoryId ? 'border-rose-500 bg-rose-50' : 'border-slate-300'
+                }`}
+              />
+
+              <button
+                type="button"
+                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                tabIndex={-1}
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Autocomplete Dropdown List */}
+            {isCategoryDropdownOpen && (
+              <div
+                ref={dropdownRef}
+                className="absolute left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-72 overflow-y-auto z-50 animate-fadeIn"
+              >
+                <div className="p-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                  <span>
+                    Gợi ý mục thu chi ({filteredCategorySuggestions.length} kết quả)
+                  </span>
+                  <span className="text-blue-600 text-[10px]">
+                    Dùng phím ↑ ↓ Enter để chọn nhanh
+                  </span>
+                </div>
+
+                {filteredCategorySuggestions.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-slate-500">
+                    Không tìm thấy mục nào khớp với "{categorySearchQuery}".
+                  </div>
+                ) : (
+                  <div className="p-1 space-y-1">
+                    {filteredCategorySuggestions.map((cat, idx) => {
+                      const isSelected = cat.id === categoryId;
+                      const isHighlighted = idx === highlightedIndex;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => handleSelectCategory(cat)}
+                          onMouseEnter={() => setHighlightedIndex(idx)}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between gap-2 ${
+                            isSelected
+                              ? 'bg-blue-50 text-blue-900 font-semibold'
+                              : isHighlighted
+                              ? 'bg-slate-100 text-slate-900'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                                {cat.code}
+                              </span>
+                              <span className="font-semibold text-slate-900 truncate">
+                                {cat.name}
+                              </span>
+                              <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
+                                {cat.group}
+                              </span>
+                            </div>
+                            {cat.description && (
+                              <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                {cat.description}
+                              </p>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-blue-600 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {errors.categoryId && (
               <p className="text-[11px] text-rose-600 mt-0.5">{errors.categoryId}</p>
             )}
-            {selectedCategoryObj?.description && (
-              <p className="text-[11px] text-slate-500 mt-1 italic">
-                ℹ {selectedCategoryObj.description}
-              </p>
+
+            {/* Selected Category Preview Tag */}
+            {selectedCategoryObj && (
+              <div className="mt-2 p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded text-[11px]">
+                    {selectedCategoryObj.code}
+                  </span>
+                  <span className="font-semibold text-slate-800">
+                    {selectedCategoryObj.name}
+                  </span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-[11px] text-slate-600">
+                    Nhóm: {selectedCategoryObj.group}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
 

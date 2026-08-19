@@ -1,10 +1,11 @@
 /**
  * Hệ thống Quản Lý Thu Chi Giáo Xứ (Đa Giáo Xứ & Phân Quyền Tài Khoản)
- * Catholic Parish Multi-Tenant Finance & Treasury Management System
+ * Phát triển & Sáng lập bởi: DN Khánh ( www.Khang.Top )
  */
 
 import React, { useState } from 'react';
 import { AuthModal } from './components/AuthModal';
+import { AuthView } from './components/AuthView';
 import { CategoryManagerModal } from './components/CategoryManagerModal';
 import { DashboardStats } from './components/DashboardStats';
 import { FilterBar } from './components/FilterBar';
@@ -93,6 +94,18 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isParishManagerOpen, setIsParishManagerOpen] = useState(false);
+
+  // If user is not logged in, REQUIRE authentication to view any parish data
+  if (!currentUser) {
+    return (
+      <AuthView
+        parishes={parishes}
+        onLogin={login}
+        onQuickLogin={quickLogin}
+        onRegisterUser={registerUser}
+      />
+    );
+  }
 
   // Handlers
   const handleOpenNewTransaction = (type: TransactionType) => {
@@ -224,20 +237,28 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
+      {/* Footer with Software Creator Credit */}
       <footer className="bg-white border-t border-slate-200 py-4 mt-12 text-center text-xs text-slate-500 no-print">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
           <div>
             <strong>{parishInfo.parishName}</strong> • {parishInfo.dioceseName}
           </div>
-          <div>
-            Hệ thống Quản Trị Sổ Thu Chi & Tài Chính Giáo Xứ (Hỗ trợ Đa Giáo Xứ)
+          <div className="flex items-center gap-1">
+            <span>Phần mềm được phát triển bởi</span>
+            <a
+              href="https://www.Khang.Top"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-blue-600 hover:text-blue-800 underline underline-offset-2"
+            >
+              DN Khánh ( www.Khang.Top )
+            </a>
           </div>
         </div>
       </footer>
 
       {/* Modals */}
-      {/* 1. Transaction Create / Edit Modal */}
+      {/* 1. Transaction Create / Edit Modal (With 1-character smart autocomplete) */}
       <TransactionModal
         isOpen={isTransactionModalOpen}
         onClose={() => {
@@ -297,7 +318,7 @@ export default function App() {
         onResetSampleData={resetToDefaultData}
       />
 
-      {/* 5. User Authentication & Account Creation Modal */}
+      {/* 5. User Authentication & Profile Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
@@ -313,7 +334,7 @@ export default function App() {
         }}
       />
 
-      {/* 6. Multi-Parish Manager Modal */}
+      {/* 6. Multi-Parish Manager Modal (Admin Full Control & View all) */}
       <ParishManagerModal
         isOpen={isParishManagerOpen}
         onClose={() => setIsParishManagerOpen(false)}

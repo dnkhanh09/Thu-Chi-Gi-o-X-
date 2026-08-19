@@ -62,14 +62,16 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getRoleDisplay = (role?: string) => {
     switch (role) {
+      case 'admin':
+        return { label: '👑 Quản Trị Hệ Thống', color: 'bg-amber-500/30 text-amber-300 border-amber-400/50' };
       case 'pastor':
         return { label: 'Linh Mục Chánh Xứ', color: 'bg-purple-500/20 text-purple-200 border-purple-400/30' };
       case 'accountant':
-        return { label: 'Kế Toán', color: 'bg-blue-500/20 text-blue-200 border-blue-400/30' };
+        return { label: 'Kế Toán Ban Tài Chính', color: 'bg-blue-500/20 text-blue-200 border-blue-400/30' };
       case 'treasurer':
-        return { label: 'Thủ Quỹ', color: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30' };
+        return { label: 'Thủ Quỹ Ban Tài Chính', color: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30' };
       case 'council_leader':
-        return { label: 'Ban Hành Giáo', color: 'bg-amber-500/20 text-amber-200 border-amber-400/30' };
+        return { label: 'Ban Hành Giáo', color: 'bg-indigo-500/20 text-indigo-200 border-indigo-400/30' };
       default:
         return { label: 'Thành Viên', color: 'bg-slate-500/20 text-slate-200 border-slate-400/30' };
     }

@@ -66,6 +66,20 @@ export const initialParishes: Parish[] = [
 
 export const initialUsers: UserAccount[] = [
   {
+    id: 'usr-admin',
+    username: 'admin',
+    fullName: 'DN Khánh',
+    saintName: 'Quản Trị Viên',
+    email: 'dnkhanh09@gmail.com',
+    phone: 'www.Khang.Top',
+    password: '123',
+    role: 'admin',
+    parishIds: ['parish-01', 'parish-02', 'parish-03'],
+    defaultParishId: 'parish-01',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+  {
     id: 'usr-01',
     username: 'chaxu',
     fullName: 'Lm. Giuse Trần Đình Vĩnh',

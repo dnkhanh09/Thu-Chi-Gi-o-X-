@@ -265,6 +265,31 @@ export const ParishSettingsModal: React.FC<ParishSettingsModalProps> = ({
             )}
           </div>
 
+          {/* Developer Attribution Card */}
+          <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200/80 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                DN
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900">
+                  Phần Mềm Quản Lý Thu Chi Giáo Xứ
+                </p>
+                <p className="text-[11px] text-slate-600">
+                  Tác giả & Phát triển bởi: <strong className="text-blue-900">DN Khánh</strong>
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://www.Khang.Top"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-2xs flex items-center gap-1"
+            >
+              <span>www.Khang.Top</span>
+            </a>
+          </div>
+
           {/* Reset to sample data */}
           <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
             <div>

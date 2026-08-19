@@ -1,6 +1,6 @@
 export type TransactionType = 'income' | 'expense';
 
-export type UserRole = 'pastor' | 'accountant' | 'treasurer' | 'council_leader' | 'viewer';
+export type UserRole = 'admin' | 'pastor' | 'accountant' | 'treasurer' | 'council_leader' | 'viewer';
 
 export interface UserAccount {
   id: string;

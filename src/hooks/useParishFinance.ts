@@ -247,10 +247,17 @@ export function useParishFinance() {
 
   // Auth Operations
   const login = useCallback(
-    (usernameOrEmail: string, password?: string): { success: boolean; message: string; user?: UserAccount } => {
+    (
+      usernameOrEmail: string,
+      password?: string,
+      targetParishId?: string
+    ): { success: boolean; message: string; user?: UserAccount } => {
       const trimmed = usernameOrEmail.trim().toLowerCase();
       const user = users.find(
-        (u) => u.username.toLowerCase() === trimmed || u.email.toLowerCase() === trimmed
+        (u) =>
+          u.username.toLowerCase() === trimmed ||
+          u.email.toLowerCase() === trimmed ||
+          (trimmed === 'dnkhanh' && u.username === 'admin')
       );
 
       if (!user) {
@@ -261,24 +268,44 @@ export function useParishFinance() {
         return { success: false, message: 'Mật khẩu không chính xác! Vui lòng thử lại.' };
       }
 
-      setCurrentUserId(user.id);
-      if (user.defaultParishId && parishes.some((p) => p.id === user.defaultParishId)) {
-        setActiveParishId(user.defaultParishId);
-      } else if (user.parishIds.length > 0 && parishes.some((p) => p.id === user.parishIds[0])) {
-        setActiveParishId(user.parishIds[0]);
+      // Check Parish Access
+      const isAdminOrPastor = user.role === 'admin' || user.role === 'pastor';
+      let selectedParish = targetParishId;
+
+      if (targetParishId && targetParishId !== 'all') {
+        if (!isAdminOrPastor && !user.parishIds.includes(targetParishId)) {
+          return {
+            success: false,
+            message: `Tài khoản "${user.fullName}" không có quyền truy cập vào Giáo xứ này! Vui lòng chọn đúng Giáo xứ của bạn.`,
+          };
+        }
+        selectedParish = targetParishId;
+      } else {
+        selectedParish = user.defaultParishId || user.parishIds[0] || 'parish-01';
       }
-      return { success: true, message: `Chào mừng ${user.fullName} đăng nhập thành công!`, user };
+
+      setCurrentUserId(user.id);
+      if (selectedParish && parishes.some((p) => p.id === selectedParish)) {
+        setActiveParishId(selectedParish);
+      }
+
+      return {
+        success: true,
+        message: `Chào mừng ${user.fullName} (${user.role === 'admin' ? 'Quản Trị Viên' : 'Ban Tài Chính'}) đăng nhập thành công!`,
+        user,
+      };
     },
     [users, parishes]
   );
 
   const quickLogin = useCallback(
-    (userId: string) => {
+    (userId: string, targetParishId?: string) => {
       const user = users.find((u) => u.id === userId);
       if (user) {
         setCurrentUserId(user.id);
-        if (user.defaultParishId && parishes.some((p) => p.id === user.defaultParishId)) {
-          setActiveParishId(user.defaultParishId);
+        const pId = targetParishId || user.defaultParishId || user.parishIds[0] || 'parish-01';
+        if (pId && parishes.some((p) => p.id === pId)) {
+          setActiveParishId(pId);
         }
       }
     },
