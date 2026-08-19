@@ -170,3 +170,74 @@ export interface MonthlyFinancialRecord {
   net: number;
   balance: number;
 }
+
+// ==========================================
+// HỆ THỐNG QUẢN LÝ GIÁO DÂN & GIA ĐÌNH CÔNG GIÁO
+// ==========================================
+
+export interface SacramentRecord {
+  received: boolean;
+  date?: string; // YYYY-MM-DD
+  place?: string; // Tên Nhà thờ / Giáo xứ cử hành
+  minister?: string; // Linh mục / Giám mục ban bí tích
+  godparent?: string; // Người đỡ đầu / Người làm chứng
+  certificateNumber?: string; // Số vào sổ bí tích
+  notes?: string;
+  spouseName?: string; // Dành cho Bí tích Hôn phối
+  spouseSaintName?: string;
+}
+
+export type FamilyRole = 'head' | 'spouse' | 'child' | 'parent' | 'grandparent' | 'member';
+export type ParishionerStatus = 'active' | 'temporary' | 'moved' | 'deceased';
+
+export interface Parishioner {
+  id: string;
+  parishId: string;
+  code: string; // e.g., 'GD-2026-001'
+  saintName: string; // Tên Thánh: Giuse, Maria, Anna, Gioan B., Phêrô, Têrêsa...
+  fullName: string; // Họ và tên
+  gender: 'male' | 'female';
+  birthDate: string; // YYYY-MM-DD
+  birthPlace?: string;
+  phone?: string;
+  email?: string;
+  address: string;
+  parishZoneId: string; // Giáo họ / Giáo khu
+  parishZoneName: string;
+  familyId?: string; // Liên kết Sổ Gia Đình Công Giáo
+  familyCode?: string;
+  familyRole?: FamilyRole; // Chủ hộ, Vợ/Chồng, Con cái...
+  status: ParishionerStatus; // Thường trú, Tạm trú, Chuyển xứ, Đã qua đời
+  deceasedDate?: string; // Ngày về với Chúa (nếu đã qua đời)
+  occupation?: string; // Nghề nghiệp
+  fatherName?: string; // Tên Thánh & Họ tên Cha
+  motherName?: string; // Tên Thánh & Họ tên Mẹ
+  sacraments: {
+    baptism?: SacramentRecord; // Bí tích Rửa Tội
+    firstCommunion?: SacramentRecord; // Bí tích Rước Lễ Lần Đầu
+    confirmation?: SacramentRecord; // Bí tích Thêm Sức
+    matrimony?: SacramentRecord; // Bí tích Hôn Phối
+    holyOrders?: SacramentRecord; // Bí tích Truyền Chức Thánh / Khấn dòng
+  };
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ParishFamily {
+  id: string;
+  parishId: string;
+  familyCode: string; // e.g., 'GĐ-KHU1-001'
+  headName: string; // Họ tên Chủ hộ
+  headSaintName?: string;
+  parishZoneId: string;
+  parishZoneName: string;
+  address: string;
+  phone: string;
+  memberCount: number;
+  memberIds: string[];
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+

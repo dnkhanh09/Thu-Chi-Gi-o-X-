@@ -18,6 +18,7 @@ import {
   User,
   UserCheck,
   UserPlus,
+  Users,
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { Parish, ParishInfo, UserAccount } from '../types';
@@ -27,8 +28,8 @@ interface HeaderProps {
   parishes: Parish[];
   activeParishId: string;
   currentUser: UserAccount | null;
-  activeTab: 'journal' | 'reports' | 'charts' | 'funds';
-  setActiveTab: (tab: 'journal' | 'reports' | 'charts' | 'funds') => void;
+  activeTab: 'journal' | 'reports' | 'charts' | 'funds' | 'parishioners';
+  setActiveTab: (tab: 'journal' | 'reports' | 'charts' | 'funds' | 'parishioners') => void;
   onOpenNewTransaction: (type: 'income' | 'expense') => void;
   onOpenCategoryManager: () => void;
   onOpenSettings: () => void;
@@ -395,6 +396,20 @@ export const Header: React.FC<HeaderProps> = ({
           <div className={`w-2 h-2 rounded-full ${activeTab === 'funds' ? 'bg-blue-600' : 'bg-slate-400'}`} />
           <Church className="w-3.5 h-3.5" />
           <span>Đối Soát & Sổ Quỹ</span>
+        </button>
+
+        <button
+          id="tab-parishioners"
+          onClick={() => setActiveTab('parishioners')}
+          className={`py-2.5 px-3.5 text-xs font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'parishioners'
+              ? 'border-blue-600 text-blue-600 font-semibold bg-blue-50/40'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
+          }`}
+        >
+          <div className={`w-2 h-2 rounded-full ${activeTab === 'parishioners' ? 'bg-blue-600' : 'bg-slate-400'}`} />
+          <Users className="w-3.5 h-3.5" />
+          <span>Quản Lý Giáo Dân</span>
         </button>
       </div>
     </header>

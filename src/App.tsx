@@ -12,6 +12,7 @@ import { FilterBar } from './components/FilterBar';
 import { FinancialCharts } from './components/FinancialCharts';
 import { FundManagerView } from './components/FundManagerView';
 import { Header } from './components/Header';
+import { ParishionerManagerView } from './components/ParishionerManagerView';
 import { ParishManagerModal } from './components/ParishManagerModal';
 import { ParishSettingsModal } from './components/ParishSettingsModal';
 import { ReceiptPrintModal } from './components/ReceiptPrintModal';
@@ -46,6 +47,8 @@ export default function App() {
     categoryGroups,
     funds,
     parishZones,
+    parishioners,
+    parishFamilies,
     parishInfo,
     filters,
     setFilters,
@@ -73,6 +76,13 @@ export default function App() {
     addParishZone,
     updateParishZone,
     deleteParishZone,
+    addParishioner,
+    updateParishioner,
+    deleteParishioner,
+    batchDeleteParishioners,
+    addParishFamily,
+    updateParishFamily,
+    deleteParishFamily,
     setParishInfo,
     resetToDefaultData,
     exportBackupJson,
@@ -80,7 +90,7 @@ export default function App() {
   } = useParishFinance();
 
   // Navigation Tab State
-  const [activeTab, setActiveTab] = useState<'journal' | 'reports' | 'charts' | 'funds'>('journal');
+  const [activeTab, setActiveTab] = useState<'journal' | 'reports' | 'charts' | 'funds' | 'parishioners'>('journal');
 
   // Modal States
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
@@ -159,19 +169,21 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* KPI Dashboard Stats Bar */}
-        <DashboardStats
-          totalIncome={totalIncome}
-          totalExpense={totalExpense}
-          netBalance={netBalance}
-          totalParishBalance={totalParishBalance}
-          fundSummaries={fundSummaries}
-          timeRangeTitle={timeRangeTitle}
-          filteredTransactions={filteredTransactions}
-        />
+        {/* KPI Dashboard Stats Bar (For Financial Tabs) */}
+        {activeTab !== 'parishioners' && (
+          <DashboardStats
+            totalIncome={totalIncome}
+            totalExpense={totalExpense}
+            netBalance={netBalance}
+            totalParishBalance={totalParishBalance}
+            fundSummaries={fundSummaries}
+            timeRangeTitle={timeRangeTitle}
+            filteredTransactions={filteredTransactions}
+          />
+        )}
 
         {/* Global Multi-Filter Toolbar (Visible for Journal, Reports, Charts) */}
-        {activeTab !== 'funds' && (
+        {activeTab !== 'funds' && activeTab !== 'parishioners' && (
           <FilterBar
             filters={filters}
             setFilters={setFilters}
@@ -233,6 +245,23 @@ export default function App() {
             transactions={transactions}
             onOpenNewTransaction={handleOpenNewTransaction}
             onPrintReceipt={handlePrintReceipt}
+          />
+        )}
+
+        {/* TAB 5: Hệ Thống Quản Lý Giáo Dân & Sổ Gia Đình Công Giáo */}
+        {activeTab === 'parishioners' && (
+          <ParishionerManagerView
+            parishioners={parishioners}
+            parishFamilies={parishFamilies}
+            parishZones={parishZones}
+            parishInfo={parishInfo}
+            onAddParishioner={addParishioner}
+            onUpdateParishioner={updateParishioner}
+            onDeleteParishioner={deleteParishioner}
+            onBatchDeleteParishioners={batchDeleteParishioners}
+            onAddParishFamily={addParishFamily}
+            onUpdateParishFamily={updateParishFamily}
+            onDeleteParishFamily={deleteParishFamily}
           />
         )}
       </main>

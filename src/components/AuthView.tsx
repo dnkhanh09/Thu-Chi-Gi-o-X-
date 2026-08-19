@@ -553,59 +553,6 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 </button>
               </form>
             )}
-
-            {/* Quick 1-Click Demo Accounts for Fast Testing */}
-            <div className="pt-4 border-t border-slate-800">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Đăng Nhập Nhanh 1-Chạm (Tài Khoản Mẫu)</span>
-                </span>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  Mật khẩu: 123
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {initialUsers.map((u) => {
-                  const badge = roleLabel(u.role);
-                  return (
-                    <button
-                      key={u.id}
-                      id={`btn-demo-login-${u.username}`}
-                      type="button"
-                      onClick={() => onQuickLogin(u.id, selectedParishId)}
-                      className={`p-2.5 text-left rounded-xl border transition-all flex items-center gap-2.5 group cursor-pointer ${
-                        u.role === 'admin'
-                          ? 'bg-amber-950/30 border-amber-500/40 hover:border-amber-400 hover:bg-amber-900/40'
-                          : 'bg-slate-950 border-slate-800 hover:border-blue-500 hover:bg-slate-800/80'
-                      }`}
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                        u.role === 'admin' ? 'bg-amber-500 text-slate-950' : 'bg-blue-600 text-white'
-                      }`}>
-                        {u.role === 'admin' ? '👑' : u.saintName ? u.saintName.charAt(0) : u.fullName.charAt(0)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1">
-                          <p className="text-xs font-bold text-white truncate group-hover:text-blue-300">
-                            {u.fullName}
-                          </p>
-                          {u.role === 'admin' && (
-                            <span className="text-[9px] font-mono bg-amber-400 text-slate-950 font-bold px-1 rounded">
-                              ADMIN
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-slate-400 truncate">
-                          {badge.label} • @{u.username}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
       </main>

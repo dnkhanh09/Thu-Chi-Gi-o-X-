@@ -9,6 +9,7 @@ import {
   initialTransactions,
   initialUsers,
 } from '../data/initialData';
+import { initialParishFamilies, initialParishioners } from '../data/initialParishioners';
 import {
   Category,
   CategoryGroup,
@@ -19,7 +20,9 @@ import {
   GroupSummary,
   MonthlyFinancialRecord,
   Parish,
+  ParishFamily,
   ParishInfo,
+  Parishioner,
   ParishZone,
   Transaction,
   UserAccount,
@@ -36,6 +39,8 @@ const STORAGE_KEYS = {
   CATEGORY_GROUPS: 'gx_finance_category_groups_v2',
   FUNDS: 'gx_finance_funds_v2',
   ZONES: 'gx_finance_zones_v2',
+  PARISHIONERS: 'gx_finance_parishioners_v2',
+  FAMILIES: 'gx_finance_families_v2',
 };
 
 const currentYear = new Date().getFullYear();
@@ -126,6 +131,25 @@ export function useParishFinance() {
     }
   });
 
+  // Parishioners & Parish Families Data Store
+  const [allParishioners, setAllParishioners] = useState<Parishioner[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PARISHIONERS);
+      return saved ? JSON.parse(saved) : initialParishioners;
+    } catch {
+      return initialParishioners;
+    }
+  });
+
+  const [allParishFamilies, setAllParishFamilies] = useState<ParishFamily[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.FAMILIES);
+      return saved ? JSON.parse(saved) : initialParishFamilies;
+    } catch {
+      return initialParishFamilies;
+    }
+  });
+
   // Filter State
   const [filters, setFilters] = useState<FilterState>({
     timeMode: 'month',
@@ -182,6 +206,14 @@ export function useParishFinance() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.ZONES, JSON.stringify(allParishZones));
   }, [allParishZones]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PARISHIONERS, JSON.stringify(allParishioners));
+  }, [allParishioners]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.FAMILIES, JSON.stringify(allParishFamilies));
+  }, [allParishFamilies]);
 
   // Derived Current User & Current Parish
   const currentUser: UserAccount | null = useMemo(() => {
@@ -244,6 +276,14 @@ export function useParishFinance() {
     const list = allParishZones.filter((z) => (z.parishId || 'parish-01') === currentParish.id);
     return list.length > 0 ? list : allParishZones.filter((z) => !z.parishId || z.parishId === 'parish-01');
   }, [allParishZones, currentParish.id]);
+
+  const parishioners = useMemo(() => {
+    return allParishioners.filter((p) => (p.parishId || 'parish-01') === currentParish.id);
+  }, [allParishioners, currentParish.id]);
+
+  const parishFamilies = useMemo(() => {
+    return allParishFamilies.filter((f) => (f.parishId || 'parish-01') === currentParish.id);
+  }, [allParishFamilies, currentParish.id]);
 
   // Auth Operations
   const login = useCallback(
@@ -580,6 +620,102 @@ export function useParishFinance() {
     setAllParishZones((prev) => prev.filter((z) => z.id !== id));
   }, []);
 
+  // CRUD for Parishioners
+  const addParishioner = useCallback(
+    (parishioner: Omit<Parishioner, 'id' | 'createdAt' | 'parishId'>) => {
+      const newParishioner: Parishioner = {
+        ...parishioner,
+        id: 'gd-' + Date.now(),
+        parishId: currentParish.id,
+        createdAt: new Date().toISOString(),
+      };
+      setAllParishioners((prev) => [newParishioner, ...prev]);
+
+      // If attached to a family, update the family members
+      if (newParishioner.familyId) {
+        setAllParishFamilies((prev) =>
+          prev.map((f) => {
+            if (f.id === newParishioner.familyId && !f.memberIds.includes(newParishioner.id)) {
+              return {
+                ...f,
+                memberIds: [...f.memberIds, newParishioner.id],
+                memberCount: f.memberIds.length + 1,
+              };
+            }
+            return f;
+          })
+        );
+      }
+
+      return newParishioner;
+    },
+    [currentParish.id]
+  );
+
+  const updateParishioner = useCallback((id: string, updatedData: Partial<Parishioner>) => {
+    setAllParishioners((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updatedData, updatedAt: new Date().toISOString() } : p))
+    );
+  }, []);
+
+  const deleteParishioner = useCallback((id: string) => {
+    setAllParishioners((prev) => prev.filter((p) => p.id !== id));
+    // Remove from family if any
+    setAllParishFamilies((prev) =>
+      prev.map((f) => {
+        if (f.memberIds.includes(id)) {
+          const newMemberIds = f.memberIds.filter((mId) => mId !== id);
+          return {
+            ...f,
+            memberIds: newMemberIds,
+            memberCount: newMemberIds.length,
+          };
+        }
+        return f;
+      })
+    );
+  }, []);
+
+  const batchDeleteParishioners = useCallback((ids: string[]) => {
+    const idSet = new Set(ids);
+    setAllParishioners((prev) => prev.filter((p) => !idSet.has(p.id)));
+    setAllParishFamilies((prev) =>
+      prev.map((f) => {
+        const newMemberIds = f.memberIds.filter((mId) => !idSet.has(mId));
+        return {
+          ...f,
+          memberIds: newMemberIds,
+          memberCount: newMemberIds.length,
+        };
+      })
+    );
+  }, []);
+
+  // CRUD for Parish Families
+  const addParishFamily = useCallback(
+    (family: Omit<ParishFamily, 'id' | 'createdAt' | 'parishId'>) => {
+      const newFamily: ParishFamily = {
+        ...family,
+        id: 'fam-' + Date.now(),
+        parishId: currentParish.id,
+        createdAt: new Date().toISOString(),
+      };
+      setAllParishFamilies((prev) => [newFamily, ...prev]);
+      return newFamily;
+    },
+    [currentParish.id]
+  );
+
+  const updateParishFamily = useCallback((id: string, updatedData: Partial<ParishFamily>) => {
+    setAllParishFamilies((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...updatedData, updatedAt: new Date().toISOString() } : f))
+    );
+  }, []);
+
+  const deleteParishFamily = useCallback((id: string) => {
+    setAllParishFamilies((prev) => prev.filter((f) => f.id !== id));
+  }, []);
+
   // Reset Data to sample
   const resetToDefaultData = useCallback(() => {
     setUsers(initialUsers);
@@ -591,13 +727,15 @@ export function useParishFinance() {
     setAllCategoryGroups(initialCategoryGroups);
     setAllFunds(initialFunds);
     setAllParishZones(initialParishZones);
+    setAllParishioners(initialParishioners);
+    setAllParishFamilies(initialParishFamilies);
   }, []);
 
   // Backup & Restore
   const exportBackupJson = useCallback(() => {
     const backupData = {
-      version: '2.0',
-      system: 'Catholic Parish Multi-Tenant Finance System',
+      version: '2.5',
+      system: 'Catholic Parish Multi-Tenant Finance & Census System',
       exportedAt: new Date().toISOString(),
       activeParishId,
       parishInfo,
@@ -608,12 +746,14 @@ export function useParishFinance() {
       categoryGroups: allCategoryGroups,
       funds: allFunds,
       parishZones: allParishZones,
+      parishioners: allParishioners,
+      families: allParishFamilies,
     };
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Sao_Luu_Thu_Chi_${currentParish.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `Sao_Luu_Giao_Xu_${currentParish.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, [
@@ -627,6 +767,8 @@ export function useParishFinance() {
     allCategoryGroups,
     allFunds,
     allParishZones,
+    allParishioners,
+    allParishFamilies,
   ]);
 
   const importBackupJson = useCallback((jsonContent: string) => {
@@ -652,6 +794,12 @@ export function useParishFinance() {
       }
       if (data.parishZones && Array.isArray(data.parishZones)) {
         setAllParishZones(data.parishZones);
+      }
+      if (data.parishioners && Array.isArray(data.parishioners)) {
+        setAllParishioners(data.parishioners);
+      }
+      if (data.families && Array.isArray(data.families)) {
+        setAllParishFamilies(data.families);
       }
       return { success: true, message: 'Nhập dữ liệu sao lưu thành công!' };
     } catch {
@@ -934,6 +1082,10 @@ export function useParishFinance() {
     categoryGroups,
     funds,
     parishZones,
+    parishioners,
+    parishFamilies,
+    allParishioners,
+    allParishFamilies,
     parishInfo,
     filters,
     setFilters,
@@ -961,6 +1113,13 @@ export function useParishFinance() {
     addParishZone,
     updateParishZone,
     deleteParishZone,
+    addParishioner,
+    updateParishioner,
+    deleteParishioner,
+    batchDeleteParishioners,
+    addParishFamily,
+    updateParishFamily,
+    deleteParishFamily,
     setParishInfo: setParishInfoWrapper,
     resetToDefaultData,
     exportBackupJson,

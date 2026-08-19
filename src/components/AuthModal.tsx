@@ -462,60 +462,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <button
                   id="btn-submit-login-modal"
                   type="submit"
-                  className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <KeyRound className="w-4 h-4" />
                   Đăng Nhập Vào Hệ Thống
                 </button>
               </form>
-
-              {/* Quick 1-Click Demo Accounts */}
-              <div className="pt-4 border-t border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" />
-                    Đăng Nhập Nhanh (Tài Khoản Mẫu)
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {initialUsers.map((u) => {
-                    const badge = roleBadge(u.role);
-                    return (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => {
-                          onQuickLogin(u.id, selectedParishId);
-                          setAuthSuccess(`Đã đăng nhập: ${u.fullName}`);
-                          setTimeout(() => {
-                            onClose();
-                            setAuthSuccess(null);
-                          }, 500);
-                        }}
-                        className={`p-2.5 text-left rounded-xl border transition-all flex items-center gap-2.5 group cursor-pointer ${
-                          u.role === 'admin'
-                            ? 'bg-amber-50/70 border-amber-300 hover:border-amber-500'
-                            : 'bg-slate-50 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                          u.role === 'admin' ? 'bg-amber-500 text-slate-900' : 'bg-slate-200 group-hover:bg-blue-600 group-hover:text-white text-slate-700'
-                        }`}>
-                          {u.role === 'admin' ? '👑' : u.saintName ? u.saintName.charAt(0) : u.fullName.charAt(0)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-700">
-                            {u.fullName}
-                          </p>
-                          <p className="text-[10px] text-slate-500 truncate">
-                            {badge.label} • @{u.username}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           )}
 
